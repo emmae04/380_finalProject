@@ -10,12 +10,13 @@
     #return np.sum(np.abs(np.subtract.outer(x, x)))/(2*len(x)**2*x.mean())
 # pure - all samples belong to the same class 
 
+#https://medium.com/geekculture/svm-classification-with-sklearn-svm-svc-how-to-plot-a-decision-boundary-with-margins-in-2d-space-7232cb3962c0
+
 
 # first graph
 # linear boundary
 # distinguish 1/2 classes using a boundary 
 # iterate thru each class combo to create boundary for each case
-
 
 # X2_df = pd.read_csv("./data/Data2Train.csv")
 # X3_df = pd.read_csv("./data/Data3Train.csv")
@@ -29,9 +30,12 @@
 import numpy as np
 from sklearn.svm import SVC
 from sklearn.datasets import make_classification
+from itertools import combinations 
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
+import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
 import itertools
 
 X1_df = pd.read_csv("./data/Data1Train.csv")
@@ -47,15 +51,55 @@ X1_test = X1T_df[['x', 'y']]
 Y1_test = X1T_df[['Class']]
 
 
+svc = SVC(kernel="linear",degree=1)
+svc.fit(X1_train, Y1_train)
+pred = svc.predict(X1_test)
 
-X1, y1 = make_classification(n_features=2, n_redundant=0, n_informative=1, n_clusters_per_class=1)
-clf = SVC(kernel="linear",degree=1)
-clf.fit(X1_train, Y1_train)
-pred = clf.predict(X1_test)
+print(list(X1_train['x'])[0:10])
+print(list(Y1_train)[0:10])
 
-print(accuracy_score(Y1_test, pred))
-print(confusion_matrix(Y1_test, pred))
-print(clf.coef_)
+plt.figure(figsize=(10, 8))
+# Plotting our two-features-space
+sns.scatterplot(x=list(X1_train['x'])[0:10], 
+                y=list(Y1_train)[0:10], s=8)
+# Constructing a hyperplane using a formula.
+w = svc.coef_[0]           # w consists of 2 elements
+b = svc.intercept_[0]      # b consists of 1 element
+x_points = np.linspace(-1, 1)    # generating x-points from -1 to 1
+y_points = -(w[0] / w[1]) * x_points - b / w[1]  # getting corresponding y-points
+# Plotting a red hyperplane
+plt.plot(x_points, y_points, c='r')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def generate_sublists(input_list): 
+    sublists = [] 
+    # Generate all sublists of length 2 
+    sublists_of_2 = list(combinations(input_list, 2)) 
+    sublists.extend(sublists_of_2) # Generate all sublists of length 3 
+    sublists_of_3 = list(combinations(input_list, 3)) 
+    sublists.extend(sublists_of_3) 
+    return sublists
+
+
+
 
 
 
