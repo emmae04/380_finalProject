@@ -10,6 +10,10 @@ import pandas as pd
 # import seaborn as sns
 import itertools
 
+#calculating accuracy 
+# in classify point - compare class in y test to current model to get an accuracy score
+# 
+
 # get the train and test data from the input strings for the file locations
 # ie train_data = "./data/Data1Train.csv"
 def getData(train_data, test_data):
@@ -104,12 +108,12 @@ def run_build(data):
         class_pairs = [(1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4)]
     else:
         class_pairs = [(1, 2), (1, 3), (2,3)]
-    rec_class_pairs(X_train, Y_train, X_test, Y_test, class_pairs)
+    curr_model_1, curr_model_2, best_model = rec_class_pairs(X_train, Y_train, X_test, Y_test, class_pairs)
 
     # plotting training data
     plt.scatter(X_train['x'], X_train['y'])
     plt.show()
-    return datasets
+    make_interactive(X_test, best_model, curr_model_1, curr_model_2)
 
 def rec_class_pairs(X_train, Y_train, X_test, Y_test, class_pairs):
     # @param: X_train, Y_train, X_test, Y_test = training / testing data for a file
@@ -120,7 +124,7 @@ def rec_class_pairs(X_train, Y_train, X_test, Y_test, class_pairs):
     best_class_two = 1
     n = len(class_pairs)
     # determining the class with the best fitted model
-    class_rec(class_pairs, best_acc, best_model, X_train, Y_train, X_test, Y_test)
+    best_model = class_rec(class_pairs, best_acc, best_model, X_train, Y_train, X_test, Y_test)
 
     # print(str(class_label_one) + " and " + str(class_label_two) + " had accuracy of " + str(curr_acc))
 
@@ -167,6 +171,8 @@ def rec_class_pairs(X_train, Y_train, X_test, Y_test, class_pairs):
         curr_left.setLeft(Node(3))
         curr_left.setRight(Node(4))
 
+    return curr_model_1, curr_model_2, best_model
+
 def class_rec(class_pairs, best_acc, best_model, X_train, Y_train, X_test, Y_test):
     # @param: class_pairs = list of tuples of classes for modeling 
     #         best_acc = integer representing the best accuracy
@@ -176,7 +182,7 @@ def class_rec(class_pairs, best_acc, best_model, X_train, Y_train, X_test, Y_tes
     # track of the most accurate one
     # Determining optimal model using a list of class pairs
     if (class_pairs == []):
-        return
+        return best_model
     # removing one pair of classes to test and train
     class_label_one, class_label_two = class_pairs.pop()
     curr_model = separate_two(X_train, Y_train, True, class_label_one, class_label_two)
@@ -185,6 +191,62 @@ def class_rec(class_pairs, best_acc, best_model, X_train, Y_train, X_test, Y_tes
         best_acc = curr_acc
         best_model = curr_model
     class_rec(class_pairs, best_acc, best_model, X_train, Y_train, X_test, Y_test)
+
+def make_interactive(X_test, best_model, curr_model_1, curr_model_2):
+
+    minX0D = X_test['x'].min()
+    maxX0D = X_test['x'].max()
+    minX1D = X_test['y'].min()
+    maxX1D = X_test['y'].max()
+    minX1 = (-best_model.intercept_-best_model.coef_[0,0]*minX0D)/best_model.coef_[0,1]
+    maxX1 = (-best_model.intercept_-best_model.coef_[0,0]*maxX0D)/best_model.coef_[0,1]
+
+    minX2 = (-curr_model_1.intercept_-curr_model_1.coef_[0,0]*minX0D)/curr_model_1.coef_[0,1]
+    maxX2 = (-curr_model_1.intercept_-curr_model_1.coef_[0,0]*maxX0D)/curr_model_1.coef_[0,1]
+
+    minX3 = (-curr_model_2.intercept_-curr_model_2.coef_[0,0]*minX0D)/curr_model_2.coef_[0,1]
+    maxX3 = (-curr_model_2.intercept_-curr_model_2.coef_[0,0]*maxX0D)/curr_model_2.coef_[0,1]
+
+    fig, ax = plt.subplots()
+    plt.scatter(X_test['x'], X_test['y'], marker='o')
+    plt.plot([minX0D,maxX0D],[minX1,maxX1])
+    plt.plot([minX0D,maxX0D],[minX2,maxX2])
+    plt.plot([minX0D,maxX0D],[minX3,maxX3])
+    ax.set_xlim([minX0D, maxX0D])
+    ax.set_ylim([minX1D, maxX1D])
+
+    text=plt.xlabel("No selection yet")
+
+    def onclick(event):
+        if event.inaxes is not None:
+            tx = 'xdata=%f, ydata=%f' % (event.xdata, event.ydata)
+            if (-best_model.intercept_-best_model.coef_[0,0]*event.xdata)/best_model.coef_[0,1]<event.ydata:
+                #tx = tx + ' Class 1 is selected'
+                if event.xdata < (-curr_model_1.intercept_ + curr_model_1.coef_[0,1] * event.ydata) / curr_model_1.coef_[0,0]:
+                    tx = tx + ' Class 1 is selected'
+                else:
+                    tx = tx + ' Class 2 is selected'
+            else:
+                #tx = tx + ' Class 2 is selected'
+                if event.xdata < (-curr_model_2.intercept_ + curr_model_2.coef_[0,1] * event.ydata) / curr_model_2.coef_[0,0]:
+                    tx = tx + ' Class 3 is selected'
+                else:
+                    tx = tx + ' Class 4 is selected'
+            plt.cla()
+            plt.scatter(X_test['x'], X_test['y'], marker='o')
+            plt.plot([minX0D,maxX0D],[minX1,maxX1])
+            plt.plot([minX0D,maxX0D],[minX2,maxX2])
+            plt.plot([minX0D,maxX0D],[minX3,maxX3])
+            ax.set_xlim([minX0D, maxX0D])
+            ax.set_ylim([minX1D, maxX1D])
+            ax.scatter([event.xdata],[event.ydata],c='r')
+                
+            text.set_text(tx)
+            fig.canvas.draw()
+        else:
+            print('Clicked outside of an axis.')
+
+    cid = fig.canvas.mpl_connect('button_press_event', onclick)
 
 
 def main():
